@@ -26,21 +26,22 @@ class OpenLogger
 
     int logMessage(LOG_TYPE type, const char* msg);
 
+    void initLogger(std::string fileName);
+
     public:
-    OpenLogger(const char *file = NULL, int logLevel = 3);
-    OpenLogger(std::string sfile, int logLevel = 3);
-    ~OpenLogger();
+        OpenLogger(const char *file = "default.log", int logLevel = 3);
+        OpenLogger(std::string sfile, int logLevel = 3);
+        ~OpenLogger();
 
-    int initLogger(std::string fileName);
 
-    int setProperty(std::string property, int value);
+        int setProperty(std::string property, int value=1);
 
-    int log(LOG_TYPE type, const char *msg, ...);
-    int e(const char *msg, ...);
-    int w(const char *msg, ...);
-    int i(const char *msg, ...);
-    int d(const char *msg, ...);
-    int v(const char *msg, ...);
+        int log(LOG_TYPE type, const char *msg, ...);
+        int e(const char *msg, ...);
+        int w(const char *msg, ...);
+        int i(const char *msg, ...);
+        int d(const char *msg, ...);
+        int v(const char *msg, ...);
 };
 
 #endif // OPEN_LOGGER_H 

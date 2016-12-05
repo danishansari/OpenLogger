@@ -3,20 +3,18 @@
 #include <sys/time.h>
 #include <cstdarg>
 
-#include <iostream>
+std::string LogType_g[] = {"ERR", "WAR", "INF", "DEB", "VER"};
 
-using namespace std;
-
-string LogType_g[] = {"ERR", "WAR", "INF", "DEB", "VER"};
+pthread_mutex_t logMutex = PTHREAD_MUTEX_INITIALIZER;
 
 OpenLogger::OpenLogger(const char *file, int logLevel)
 {
     m_logLevel = logLevel;
 
-    initLogger(string(file));
+    initLogger(std::string(file));
 }
 
-OpenLogger::OpenLogger(string sFile, int logLevel)
+OpenLogger::OpenLogger(std::string sFile, int logLevel)
 {
     m_logLevel = logLevel;
 
@@ -26,22 +24,17 @@ OpenLogger::OpenLogger(string sFile, int logLevel)
 OpenLogger::~OpenLogger()
 { }
 
-int OpenLogger::initLogger(string fileName)
+void OpenLogger::initLogger(std::string fileName)
 {
     m_logMsg = NULL;
     m_loggerPtr = NULL;
     m_enableTimeLog= 0;
 
     m_fileName = (char *)fileName.c_str();
-    m_loggerPtr = fopen(m_fileName, "a");
-
-    if (m_loggerPtr)
-        return 1;
-
-    return 0;
+    m_loggerPtr = fopen(m_fileName, "a+");
 }
 
-int OpenLogger::setProperty(string property, int value)
+int OpenLogger::setProperty(std::string property, int value)
 {
     int retStatus = 1;
 
@@ -73,20 +66,13 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
     //dataCount += sprintf(preMsg, "< ");
     if (m_enableTimeLog)
     {
-        dataCount += sprintf(preMsg+dataCount, " %02d/%02d/%04d %02d:%02d:%02d %06ld ",
+        dataCount += sprintf(preMsg+dataCount, "%02d/%02d/%04d %02d:%02d:%02d %06ld ",
                 cur_time.tm_mday, cur_time.tm_mon+1,
                 cur_time.tm_year+1900, cur_time.tm_hour,
                 cur_time.tm_min, cur_time.tm_sec, tv.tv_usec);
     }
     
     dataCount += sprintf(preMsg+dataCount, "%s > ", LogType_g[type].c_str());
-
-    //char currMsg[MAX_MSG_SIZE];
-
-    //va_list va;
-    //va_start(va, format);
-    //vsprintf(currMsg, format, va);
-    //va_end(va);
 
     dataCount += sprintf(preMsg+dataCount, "%s", msg);
 

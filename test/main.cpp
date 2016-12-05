@@ -6,7 +6,8 @@ using namespace std;
 
 int main()
 {
-    OpenLogger logger("myLog.log");
+    OpenLogger logger;
+    logger.setProperty("LOG_TIME");
     logger.log(WAR, "hello\n");
 
     int x = 5;
