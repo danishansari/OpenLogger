@@ -2,6 +2,7 @@
 #define OPEN_LOGGER_H
 
 #include <string>
+#include <vector>
 #include <string.h>
 #include <stdio.h>
 
@@ -20,7 +21,7 @@ class OpenLogger
     
     int m_enableTimeLog;
 
-    int m_enableThread;
+    std::vector<std::string> m_fileNamesVec;
 
     FILE *m_loggerPtr;
 
