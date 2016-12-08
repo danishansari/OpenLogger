@@ -57,7 +57,7 @@ int OpenLogger::setProperty(std::string property, int value)
         m_enableTimeLog = 1;
     else
     {
-        printf("[OpenLogger] :: invalid property!!\n");
+        printf("[OpenLogger] :: invalid property: %s\n", property.c_str());
         retStatus = 0;
     }
 
