@@ -2,7 +2,7 @@
 #define OPEN_LOGGER_H
 
 #include <string>
-#include <vector>
+#include <queue>
 #include <string.h>
 #include <stdio.h>
 
@@ -21,13 +21,30 @@ class OpenLogger
     
     int m_enableTimeLog;
 
-    std::vector<std::string> m_fileNamesVec;
+    std::string m_prevMsg;
+
+    int m_prevMsgCount;
+
+    int m_enableThread;
+
+    pthread_t m_loggingThread;
+
+    std::queue<std::string> m_logMsgVec;
 
     FILE *m_loggerPtr;
 
     int logMessage(LOG_TYPE type, const char* msg);
 
     void initLogger(std::string fileName);
+
+    void threadLogFunc();
+
+    static void * threadHelper(void *logger)
+    {
+        ((OpenLogger *)logger)->threadLogFunc();
+
+        return NULL;
+    }
 
     public:
         OpenLogger(const char *file = "default.log", int logLevel = 3);

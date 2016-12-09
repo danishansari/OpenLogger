@@ -14,6 +14,7 @@ OpenLogger logger;
 int main()
 {
     logger.setProperty("LOG_TIME");
+    logger.setProperty("ENABLE_THREAD");
     logger.log(INF, "main started\n");
 
     pthread_t t1, t2;
@@ -28,9 +29,6 @@ int main()
 
 void* threadFun2(void *)
 {
-    logger.setProperty("LOG_TIME");
-    logger.setProperty("THREAD_SAFE");
-
     cout << "Thread func2 ::: ::: ::: " << endl;
     for (int i = 0; i < 1000; i++)
     {
@@ -49,9 +47,6 @@ void* threadFun2(void *)
 
 void* threadFun1(void *)
 {
-    logger.setProperty("LOG_TIME");
-    logger.setProperty("THREAD_SAFE");
-
     cout << "Thread func1 ::: ::: ::: " << endl;
     for (int i = 0; i < 1000; i++)
     {

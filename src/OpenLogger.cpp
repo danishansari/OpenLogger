@@ -1,5 +1,7 @@
 #include "OpenLogger.h"
 
+#include <sstream>
+#include <unistd.h>
 #include <sys/time.h>
 #include <cstdarg>
 
@@ -28,6 +30,12 @@ OpenLogger::~OpenLogger()
         fclose(m_loggerPtr);
         m_loggerPtr = NULL;
     }
+
+    if (m_enableThread)
+    { 
+        m_enableThread = -1;
+        pthread_join(m_loggingThread, NULL);
+    }
 }
 
 void OpenLogger::initLogger(std::string fileName)
@@ -35,6 +43,10 @@ void OpenLogger::initLogger(std::string fileName)
     m_logMsg = NULL;
     m_loggerPtr = NULL;
     m_enableTimeLog= 0;
+    m_enableThread = 0;
+
+    m_prevMsg = "unknown";
+    m_prevMsgCount = 0;
 
     m_fileName = (char *)fileName.c_str();
 
@@ -55,6 +67,19 @@ int OpenLogger::setProperty(std::string property, int value)
         m_logLevel = value;
     else if (property == "LOG_TIME")
         m_enableTimeLog = 1;
+    else if (property == "ENABLE_THREAD")
+    {
+        m_enableThread = 1;
+
+        int tid = pthread_create(&m_loggingThread, NULL, 
+                            &OpenLogger::threadHelper, (void *)this);
+
+        if (tid == -1)
+        {
+            printf("[OpenLogger] :: could not initialize thread!!\n");
+            m_enableThread = 0;
+        }
+    }
     else
     {
         printf("[OpenLogger] :: invalid property!!\n");
@@ -64,6 +89,38 @@ int OpenLogger::setProperty(std::string property, int value)
     return retStatus;
 }
 
+void OpenLogger::threadLogFunc()
+{
+    printf("[OpenLogger] :: Threaded Loggin enabled!!\n");
+
+    while (m_enableThread)
+    {
+        if (m_logMsgVec.size() > 0)
+        {
+            std::string logMsg = m_logMsgVec.front();
+            
+            try {
+                int ret = fprintf(m_loggerPtr, logMsg.c_str());
+            }
+            catch(...) {
+                printf("[OpenLogger] :: something went wrong!!\n");
+
+                break;
+            }
+
+            pthread_mutex_lock(&logMutex);
+
+            m_logMsgVec.pop();
+                
+            pthread_mutex_unlock(&logMutex);
+        }
+        else if (m_enableThread == -1)
+            m_enableThread = 0;
+        else
+            usleep(10000);
+    }
+}
+
 int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
 {
     if (!m_loggerPtr)
@@ -71,8 +128,8 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
         printf("[OpenLogger] :: logger not initialized!!\n");
         return -1;
     }
-
-    char preMsg[MAX_MSG_SIZE];
+    
+    char currMsg[MAX_MSG_SIZE];
 
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -85,30 +142,65 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
 
     if (m_enableTimeLog)
     {
-        dataCount += sprintf(preMsg+dataCount, "%02d/%02d/%04d %02d:%02d:%02d %06ld ",
+        dataCount += sprintf(currMsg+dataCount, "%02d/%02d/%04d %02d:%02d:%02d %06ld ",
                 cur_time.tm_mday, cur_time.tm_mon+1,
                 cur_time.tm_year+1900, cur_time.tm_hour,
                 cur_time.tm_min, cur_time.tm_sec, tv.tv_usec);
     }
     
-    dataCount += sprintf(preMsg+dataCount, "%s > ", LogType_g[type].c_str());
+    dataCount += sprintf(currMsg+dataCount, "%s > ", LogType_g[type].c_str());
 
-    dataCount += sprintf(preMsg+dataCount, "%s", msg);
+    dataCount += sprintf(currMsg+dataCount, "%s", msg);
 
-    if (strlen(preMsg) > MAX_MSG_SIZE)
+    if (m_prevMsg == std::string(currMsg))
+        m_prevMsgCount ++;
+    else if (m_prevMsgCount > 0)
     {
-        printf("[OpenLogger] :: Log message too long!!");
-        dataCount = -1;
+        std::stringstream ss;
+        ss << m_prevMsgCount;
+
+        m_prevMsgCount = 0;
+        
+        m_prevMsg = "same message occured " + ss.str() + " times.\n";
     }
-    else
+   
+    if (m_prevMsgCount == 0)
     {
-        try {
-            //dataCount = fwrite(preMsg, 1, dataCount, m_loggerPtr);
-            dataCount = fprintf(m_loggerPtr, preMsg);
-        }
-        catch(...) {
-            printf("[OpenLogger] :: something went wrong!!");
+        if (strlen(currMsg) > MAX_MSG_SIZE)
+        {
+            printf("[OpenLogger] :: Log message too long!!\n");
             dataCount = -1;
+        }
+        else
+        {
+            if (m_enableThread)
+            {
+                while (m_logMsgVec.size() >= 99)
+                    usleep(10000);
+
+                pthread_mutex_lock(&logMutex);
+
+                if (m_prevMsg.find("same message") != std::string::npos)
+                    m_logMsgVec.push(std::string(currMsg));
+
+                m_logMsgVec.push(std::string(currMsg));
+
+                pthread_mutex_unlock(&logMutex);    
+            }
+            else
+            {
+                try {
+                    
+                    dataCount = fprintf(m_loggerPtr, currMsg);
+                }
+                catch(...) {
+                    printf("[OpenLogger] :: something went wrong!!\n");
+                    dataCount = -1;
+                    m_enableThread = 0;
+                }
+            }
+        
+            m_prevMsg = currMsg;
         }
     }
 
