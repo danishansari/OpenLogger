@@ -6,7 +6,9 @@
 #include <string.h>
 #include <stdio.h>
 
-#define MAX_MSG_SIZE 1024
+#define MAX_MSG_SIZE 2048
+#define MAX_FILE_SIZE 1073741824 
+#define MSG_BUFFER_SIZE 100
 
 enum LOG_TYPE {ERR = 0, WAR, INF, DEB, VER};
 
