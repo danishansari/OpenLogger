@@ -6,9 +6,9 @@
 #include <string.h>
 #include <stdio.h>
 
-#define MAX_MSG_SIZE 2048
-#define MAX_FILE_SIZE 1073741824 
-#define MSG_BUFFER_SIZE 100
+#define MAX_MSG_SIZE 2048 // bytes
+#define MAX_FILE_SIZE 0.05 // mb's
+#define MSG_BUFFER_SIZE 100 // number
 
 enum LOG_TYPE {ERR = 0, WAR, INF, DEB, VER};
 
@@ -24,10 +24,14 @@ class OpenLogger
     int m_enableTimeLog;
 
     std::string m_prevMsg;
+    
+    std::string m_prevMsgPrefix;
 
     int m_prevMsgCount;
 
     int m_enableThread;
+    
+    int m_fileSizeExceeded;
 
     pthread_t m_loggingThread;
 
@@ -40,6 +44,8 @@ class OpenLogger
     void initLogger(std::string fileName);
 
     void threadLogFunc();
+
+    long getFileSize();
 
     static void * threadHelper(void *logger)
     {

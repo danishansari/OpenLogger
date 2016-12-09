@@ -3,6 +3,7 @@
 #include <sstream>
 #include <unistd.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 #include <cstdarg>
 
 std::string LogType_g[] = {"ERR", "WAR", "INF", "DEB", "VER"};
@@ -44,11 +45,15 @@ void OpenLogger::initLogger(std::string fileName)
     m_loggerPtr = NULL;
     m_enableTimeLog= 0;
     m_enableThread = 0;
+    m_logLevel = 2;
 
     m_prevMsg = "unknown";
+    m_prevMsgPrefix = "unknown";
     m_prevMsgCount = 0;
 
-    m_fileName = (char *)fileName.c_str();
+    m_fileName = new char[1024];
+    memset(m_fileName, '\0', sizeof(m_fileName));
+    sprintf(m_fileName, fileName.c_str());
 
     if (fileName == "default.log")
         m_loggerPtr = fopen(m_fileName, "w");
@@ -95,12 +100,15 @@ void OpenLogger::threadLogFunc()
 
     while (m_enableThread)
     {
-        if (m_logMsgVec.size() > 0)
+        if (m_logMsgVec.size() > 0 && !m_fileSizeExceeded)
         {
             std::string logMsg = m_logMsgVec.front();
             
             try {
-                int ret = fprintf(m_loggerPtr, logMsg.c_str());
+                if (fprintf(m_loggerPtr, logMsg.c_str()) <= 0)
+                {
+                    printf("[OpenLogger] :: could not write log!!\n");
+                }
             }
             catch(...) {
                 printf("[OpenLogger] :: something went wrong!!\n");
@@ -121,14 +129,35 @@ void OpenLogger::threadLogFunc()
     }
 }
 
+long OpenLogger::getFileSize()
+{
+    struct stat stat_buf;
+    memset(&stat_buf, '\0', sizeof(stat_buf));
+
+    int rc = stat(m_fileName, &stat_buf);
+
+    return rc == 0 ? stat_buf.st_size : -1;
+}
+
 int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
 {
-    if (!m_loggerPtr)
+    if (!m_loggerPtr || type > m_logLevel || m_fileSizeExceeded)
     {
-        printf("[OpenLogger] :: logger not initialized!!\n");
+        if (!m_loggerPtr)
+            printf("[OpenLogger] :: logger not initialized!!\n");
+        
+        if (m_fileSizeExceeded)
+        {
+            if (getFileSize() >= MAX_FILE_SIZE)
+                printf("[OpenLogger] :: File Size exceeded, could not log message!!\n");
+            else
+                m_fileSizeExceeded = 0;
+        }
+
+        usleep(10000);
         return -1;
     }
-    
+  
     char currMsg[MAX_MSG_SIZE];
 
     struct timeval tv;
@@ -147,25 +176,28 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
                 cur_time.tm_year+1900, cur_time.tm_hour,
                 cur_time.tm_min, cur_time.tm_sec, tv.tv_usec);
     }
-    
+   
     dataCount += sprintf(currMsg+dataCount, "%s > ", LogType_g[type].c_str());
 
-    dataCount += sprintf(currMsg+dataCount, "%s", msg);
-
-    if (m_prevMsg == std::string(currMsg))
+    if (m_prevMsg == std::string(msg))
         m_prevMsgCount ++;
-    else if (m_prevMsgCount > 0)
+    else if (m_prevMsgCount >= 3)
     {
         std::stringstream ss;
-        ss << m_prevMsgCount;
+        ss << (m_prevMsgCount-3);
 
         m_prevMsgCount = 0;
-        
-        m_prevMsg = "same message occured " + ss.str() + " times.\n";
+       
+        m_prevMsg = m_prevMsgPrefix;
+        m_prevMsg += "same message occured " + ss.str() + " more times.\n";
     }
-   
-    if (m_prevMsgCount == 0)
+
+    m_prevMsgPrefix = std::string(currMsg);
+
+    if (m_prevMsgCount < 3)
     {
+        dataCount += sprintf(currMsg+dataCount, "%s", msg);
+
         if (strlen(currMsg) > MAX_MSG_SIZE)
         {
             printf("[OpenLogger] :: Log message too long!!\n");
@@ -173,6 +205,14 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
         }
         else
         {
+            double fsize = getFileSize()/(1024.0*1024.0);
+            if (fsize >= MAX_FILE_SIZE)
+            {
+                printf ("Exceeded File Size = %.2lf : %.2lf\n", fsize, MAX_FILE_SIZE);
+                dataCount = sprintf(currMsg, "File Size exeeded, stoping logging now..\n");
+                m_fileSizeExceeded = 1;
+            }
+
             if (m_enableThread)
             {
                 while (m_logMsgVec.size() >= 99)
@@ -181,7 +221,7 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
                 pthread_mutex_lock(&logMutex);
 
                 if (m_prevMsg.find("same message") != std::string::npos)
-                    m_logMsgVec.push(std::string(currMsg));
+                    m_logMsgVec.push(m_prevMsg);
 
                 m_logMsgVec.push(std::string(currMsg));
 
@@ -190,6 +230,9 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
             else
             {
                 try {
+                
+                    if (m_prevMsg.find("same message") != std::string::npos)
+                        dataCount = fprintf(m_loggerPtr, m_prevMsg.c_str());
                     
                     dataCount = fprintf(m_loggerPtr, currMsg);
                 }
@@ -198,11 +241,11 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
                     dataCount = -1;
                     m_enableThread = 0;
                 }
-            }
-        
-            m_prevMsg = currMsg;
+            } 
         }
     }
+
+    m_prevMsg = msg;
 
     return dataCount;
 }

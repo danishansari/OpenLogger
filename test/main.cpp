@@ -29,6 +29,8 @@ int main()
 
 void* threadFun2(void *)
 {
+    return NULL;
+    OpenLogger logger("thread_2.log");
     cout << "Thread func2 ::: ::: ::: " << endl;
     for (int i = 0; i < 1000; i++)
     {
@@ -47,8 +49,9 @@ void* threadFun2(void *)
 
 void* threadFun1(void *)
 {
+    int count = 0;
     cout << "Thread func1 ::: ::: ::: " << endl;
-    for (int i = 0; i < 1000; i++)
+    for (int i = 0; i < 1000;)
     {
         if (i%2 == 0)
             logger.e("ThreadFunc1:: i = %d \n", i);
@@ -59,6 +62,11 @@ void* threadFun1(void *)
         else
             logger.d("ThreadFunc1:: i = %d \n", i);
         
+        if (count++ > 5)
+        {
+            i++;
+            count = 0;
+        }
         usleep(10000);
     }
 }
