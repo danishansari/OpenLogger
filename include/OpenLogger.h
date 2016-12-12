@@ -29,6 +29,8 @@ class OpenLogger
 
     int m_prevMsgCount;
 
+    int m_logLongTime;
+
     int m_enableThread;
     
     int m_fileSizeExceeded;
@@ -58,7 +60,6 @@ class OpenLogger
         OpenLogger(const char *file = "default.log", int logLevel = 3);
         OpenLogger(std::string sfile, int logLevel = 3);
         ~OpenLogger();
-
 
         int setProperty(std::string property, int value=1);
 
