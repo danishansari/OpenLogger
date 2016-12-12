@@ -47,18 +47,24 @@ void OpenLogger::initLogger(std::string fileName)
     m_enableThread = 0;
     m_logLevel = 2;
 
+    m_logLongTime = 1;
+
     m_prevMsg = "unknown";
     m_prevMsgPrefix = "unknown";
     m_prevMsgCount = 0;
 
     m_fileName = new char[1024];
     memset((void*)m_fileName, 0, sizeof(m_fileName));
-    sprintf(m_fileName, "%s", fileName.c_str());
 
     if (fileName == "default.log")
-        m_loggerPtr = fopen(m_fileName, "w");
+    {
+        fileName = "./log/"+fileName;
+        m_loggerPtr = fopen(fileName.c_str(), "w");
+    }
     else
-        m_loggerPtr = fopen(m_fileName, "a+");
+        m_loggerPtr = fopen(fileName.c_str(), "a+");
+    
+    sprintf(m_fileName, "%s", fileName.c_str());
 
     if (!m_loggerPtr)
         printf("[OpenLogger] :: error in opening logger\n");
@@ -141,6 +147,9 @@ long OpenLogger::getFileSize()
 
 int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
 {
+    struct timeval ts, te;
+    gettimeofday(&ts, NULL);
+
     if (!m_loggerPtr || type > m_logLevel || m_fileSizeExceeded)
     {
         if (!m_loggerPtr)
@@ -171,7 +180,7 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
 
     if (m_enableTimeLog)
     {
-        dataCount += sprintf(currMsg+dataCount, "%02d/%02d/%04d %02d:%02d:%02d %06ld ",
+        dataCount += sprintf(currMsg, "%02d/%02d/%04d %02d:%02d:%02d %06ld ",
                 cur_time.tm_mday, cur_time.tm_mon+1,
                 cur_time.tm_year+1900, cur_time.tm_hour,
                 cur_time.tm_min, cur_time.tm_sec, tv.tv_usec);
@@ -181,7 +190,7 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
 
     if (m_prevMsg == std::string(msg))
         m_prevMsgCount ++;
-    else if (m_prevMsgCount >= 3)
+    else if (m_prevMsgCount > 3)
     {
         std::stringstream ss;
         ss << (m_prevMsgCount-3);
@@ -246,6 +255,14 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
     }
 
     m_prevMsg = msg;
+
+    gettimeofday(&te, NULL);
+
+    double td = (te.tv_sec - ts.tv_sec)*1000.0 + (te.tv_usec-ts.tv_usec)/1000.0;
+
+    if (td > 20.0 && m_logLongTime)
+        fprintf(m_loggerPtr, "%s Logging is taking so long(%.2lf ms)\n", 
+            m_prevMsgPrefix.c_str(), td);
 
     return dataCount;
 }
