@@ -69,4 +69,6 @@ void* threadFun1(void *)
         }
         usleep(10000);
     }
+
+    return NULL;
 }

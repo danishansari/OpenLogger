@@ -52,8 +52,8 @@ void OpenLogger::initLogger(std::string fileName)
     m_prevMsgCount = 0;
 
     m_fileName = new char[1024];
-    memset(m_fileName, '\0', sizeof(m_fileName));
-    sprintf(m_fileName, fileName.c_str());
+    memset((void*)m_fileName, 0, sizeof(m_fileName));
+    sprintf(m_fileName, "%s", fileName.c_str());
 
     if (fileName == "default.log")
         m_loggerPtr = fopen(m_fileName, "w");
@@ -105,7 +105,7 @@ void OpenLogger::threadLogFunc()
             std::string logMsg = m_logMsgVec.front();
             
             try {
-                if (fprintf(m_loggerPtr, logMsg.c_str()) <= 0)
+                if (fprintf(m_loggerPtr, "%s", logMsg.c_str()) <= 0)
                 {
                     printf("[OpenLogger] :: could not write log!!\n");
                 }
@@ -208,14 +208,14 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
             double fsize = getFileSize()/(1024.0*1024.0);
             if (fsize >= MAX_FILE_SIZE)
             {
-                printf ("Exceeded File Size = %.2lf : %.2lf\n", fsize, MAX_FILE_SIZE);
+                printf ("Exceeded File Size = %.2lf(max = %d)\n", fsize, MAX_FILE_SIZE);
                 dataCount = sprintf(currMsg, "File Size exeeded, stoping logging now..\n");
                 m_fileSizeExceeded = 1;
             }
 
             if (m_enableThread)
             {
-                while (m_logMsgVec.size() >= 99)
+                while (m_logMsgVec.size() >= MSG_BUFFER_SIZE)
                     usleep(10000);
 
                 pthread_mutex_lock(&logMutex);
@@ -232,9 +232,9 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
                 try {
                 
                     if (m_prevMsg.find("same message") != std::string::npos)
-                        dataCount = fprintf(m_loggerPtr, m_prevMsg.c_str());
+                        dataCount = fprintf(m_loggerPtr, "%s", m_prevMsg.c_str());
                     
-                    dataCount = fprintf(m_loggerPtr, currMsg);
+                    dataCount = fprintf(m_loggerPtr, "%s", currMsg);
                 }
                 catch(...) {
                     printf("[OpenLogger] :: something went wrong!!\n");
@@ -259,7 +259,7 @@ int OpenLogger::log(LOG_TYPE type, const char *format, ...)
     vsprintf(currMsg, format, va);
     va_end(va);
 
-    logMessage(type, currMsg);
+    return logMessage(type, currMsg);
 }
 
 int OpenLogger::e(const char *format, ...)
@@ -271,7 +271,7 @@ int OpenLogger::e(const char *format, ...)
     vsprintf(currMsg, format, va);
     va_end(va);
 
-    logMessage(ERR, currMsg);
+    return logMessage(ERR, currMsg);
 }
 
 int OpenLogger::w(const char *format, ...)
@@ -283,7 +283,7 @@ int OpenLogger::w(const char *format, ...)
     vsprintf(currMsg, format, va);
     va_end(va);
 
-    logMessage(WAR, currMsg);
+    return logMessage(WAR, currMsg);
 }
 
 int OpenLogger::i(const char *format, ...)
@@ -295,7 +295,7 @@ int OpenLogger::i(const char *format, ...)
     vsprintf(currMsg, format, va);
     va_end(va);
 
-    logMessage(INF, currMsg);
+    return logMessage(INF, currMsg);
 }
 
 int OpenLogger::d(const char *format, ...)
@@ -307,7 +307,7 @@ int OpenLogger::d(const char *format, ...)
     vsprintf(currMsg, format, va);
     va_end(va);
 
-    logMessage(DEB, currMsg);
+    return logMessage(DEB, currMsg);
 }
 
 int OpenLogger::v(const char *format, ...)
@@ -319,5 +319,5 @@ int OpenLogger::v(const char *format, ...)
     vsprintf(currMsg, format, va);
     va_end(va);
 
-    logMessage(VER, currMsg);
+    return logMessage(VER, currMsg);
 }
