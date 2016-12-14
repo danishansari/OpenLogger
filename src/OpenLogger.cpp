@@ -168,6 +168,7 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
     }
   
     char currMsg[MAX_MSG_SIZE];
+    memset(currMsg, 0, (size_t)MAX_MSG_SIZE);
 
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -201,7 +202,7 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
         m_prevMsg += "same message occured " + ss.str() + " more times.\n";
     }
 
-    m_prevMsgPrefix = std::string(currMsg);
+    m_prevMsgPrefix = currMsg;
 
     if (m_prevMsgCount < 3)
     {

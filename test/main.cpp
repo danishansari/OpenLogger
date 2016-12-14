@@ -15,6 +15,7 @@ int main()
 {
     logger.setProperty("LOG_TIME");
     //logger.setProperty("ENABLE_THREAD");
+    logger.setProperty("LOG_LEVEL", VER);
     logger.log(INF, "main started\n");
 
     pthread_t t1, t2;
@@ -29,6 +30,7 @@ int main()
 
 void* threadFun2(void *)
 {
+    //return NULL;
     //OpenLogger logger("./log/thread_2.log");
     cout << "Thread func2 ::: ::: ::: " << endl;
     for (int i = 0; i < 1000; i++)
