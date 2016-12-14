@@ -191,20 +191,20 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
 
     if (m_prevMsg == std::string(msg))
         m_prevMsgCount ++;
-    else if (m_prevMsgCount > 3)
+    else if (m_prevMsgCount > 1)
     {
         std::stringstream ss;
-        ss << (m_prevMsgCount-3);
+        ss << (m_prevMsgCount-1);
 
         m_prevMsgCount = 0;
-       
+
         m_prevMsg = m_prevMsgPrefix;
         m_prevMsg += "same message occured " + ss.str() + " more times.\n";
     }
 
     m_prevMsgPrefix = currMsg;
 
-    if (m_prevMsgCount < 3)
+    if (m_prevMsgCount < 1)
     {
         dataCount += sprintf(currMsg+dataCount, "%s", msg);
 
@@ -242,7 +242,7 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
                 try {
                 
                     if (m_prevMsg.find("same message") != std::string::npos)
-                        dataCount = fprintf(m_loggerPtr, "%s", m_prevMsg.c_str());
+                      dataCount = fprintf(m_loggerPtr, "%s", m_prevMsg.c_str());
                     
                     dataCount = fprintf(m_loggerPtr, "%s", currMsg);
                 }

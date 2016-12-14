@@ -31,7 +31,7 @@ int main()
 void* threadFun2(void *)
 {
     //return NULL;
-    //OpenLogger logger("./log/thread_2.log");
+    OpenLogger logger("./log/thread_2.log");
     cout << "Thread func2 ::: ::: ::: " << endl;
     for (int i = 0; i < 1000; i++)
     {
