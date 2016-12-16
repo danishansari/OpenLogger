@@ -54,7 +54,7 @@ void* threadFun2(void *)
       gettimeofday(&tv2, NULL);
 
       double timed = (tv2.tv_sec-tv1.tv_sec)*1000.0+(tv2.tv_usec-tv1.tv_usec)/1000.0;
-      printf("Time Taken in Logging = %.2lf ms\n", timed);
+      //printf("Time Taken in Logging = %.2lf ms\n", timed);
 
         usleep(10000);
     }
