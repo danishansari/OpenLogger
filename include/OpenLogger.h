@@ -48,6 +48,7 @@ class OpenLogger
     void threadLogFunc();
 
     long getFileSize();
+    int ifLogFisible(LOG_TYPE type);
 
     static void * threadHelper(void *logger)
     {

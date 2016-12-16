@@ -1,5 +1,5 @@
 CX = g++ 
-CFLAGS = -Wall -O6
+CFLAGS = -Wall -g #-O6 
 
 SRCDIR = src
 OBJDIR = obj

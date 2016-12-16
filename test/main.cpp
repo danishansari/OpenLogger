@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include <unistd.h>
+#include <sys/time.h>
 
 #include "OpenLogger.h"
 
@@ -32,9 +33,16 @@ void* threadFun2(void *)
 {
     //return NULL;
     OpenLogger logger("./log/thread_2.log");
+    logger.setProperty("LOG_LEVEL", VER);
+    logger.setProperty("LOG_TIME");
+    logger.setProperty("ENABLE_THREAD");
+
+    struct timeval tv1, tv2;
+
     cout << "Thread func2 ::: ::: ::: " << endl;
     for (int i = 0; i < 1000; i++)
     {
+      gettimeofday(&tv1, NULL);
         if (i%2 == 0)
             logger.e("ThreadFunc2:: i = %d \n", i);
         else if(i%3 == 0)
@@ -43,6 +51,10 @@ void* threadFun2(void *)
             logger.i("ThreadFunc2:: i = %d \n", i);
         else
             logger.d("ThreadFunc2:: i = %d \n", i);
+      gettimeofday(&tv2, NULL);
+
+      double timed = (tv2.tv_sec-tv1.tv_sec)*1000.0+(tv2.tv_usec-tv1.tv_usec)/1000.0;
+      printf("Time Taken in Logging = %.2lf ms\n", timed);
 
         usleep(10000);
     }
