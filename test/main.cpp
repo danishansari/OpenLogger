@@ -12,11 +12,20 @@ using namespace std;
 
 void* threadFun1(void *);
 void* threadFun2(void *);
+void  printVersion();
 
-OpenLogger logger;
 
-int main()
+
+int main(int argc, char**argv)
 {
+    if (argc > 1 && strcmp(argv[1], "-v") == 0)
+    {
+        printVersion();
+        return -1;
+    }
+
+    OpenLogger logger;
+
     logger.setProperty("LOG_TIME");
     logger.setProperty("LOG_LEVEL", VER);
     logger.setProperty("ENABLE_THREAD");
@@ -115,4 +124,11 @@ void* threadFun2(void *)
     }
 
     return NULL;
+}
+
+
+void  printVersion()
+{
+    cout << "VERSION  " << MAJOR_VERSION+MINOR_VERSION << endl;
+    cout << "DATE     " << VERSION_DATE << endl;
 }

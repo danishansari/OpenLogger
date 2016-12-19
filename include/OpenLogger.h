@@ -1,6 +1,14 @@
 #ifndef OPEN_LOGGER_H
 #define OPEN_LOGGER_H
 
+//--    VERSION INFORMATION     --//
+
+#define MAJOR_VERSION 1.0
+#define MINOR_VERSION 0.1
+#define VERSION_DATE  "11.12.16"
+
+// -----------   +   ------------//
+
 #include <string>
 #include <queue>
 #include <string.h>
