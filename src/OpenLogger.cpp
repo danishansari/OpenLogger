@@ -1,6 +1,5 @@
 #include "OpenLogger.h"
 
-#include <climits>
 #include <sstream>
 #include <unistd.h>
 #include <sys/time.h>

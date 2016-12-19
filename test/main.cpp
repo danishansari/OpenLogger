@@ -37,7 +37,7 @@ int main()
         while(count1++ < INT_MAX)
         {
             logger.i("--- main running: count = %d\n", count1);
-            //usleep(1000);
+            usleep(1000);
         }
 
     }
@@ -96,7 +96,7 @@ void* threadFun2(void *)
     cout << "Thread func2 ::: ::: ::: " << endl;
     for (int i = 0; i < INT_MAX; i++)
     {
-      gettimeofday(&tv1, NULL);
+      //gettimeofday(&tv1, NULL);
         if (i%2 == 0)
             logger.e("ThreadFunc2:: i = %d \n", i);
         else if(i%3 == 0)
@@ -105,11 +105,11 @@ void* threadFun2(void *)
             logger.i("ThreadFunc2:: i = %d \n", i);
         else
             logger.d("ThreadFunc2:: i = %d \n", i);
-      gettimeofday(&tv2, NULL);
+      //gettimeofday(&tv2, NULL);
 
-      double timed = (tv2.tv_sec-tv1.tv_sec)*1000.0+(tv2.tv_usec-tv1.tv_usec)/1000.0;
-      if (timed > 10.0)
-        printf("Time Taken in Logging = %.2lf ms\n", timed);
+      //double timed = (tv2.tv_sec-tv1.tv_sec)*1000.0+(tv2.tv_usec-tv1.tv_usec)/1000.0;
+      //if (timed > 10.0)
+      //  printf("Time Taken in Logging = %.2lf ms\n", timed);
 
         usleep(1000);
     }
