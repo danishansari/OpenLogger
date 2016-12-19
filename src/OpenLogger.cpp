@@ -139,7 +139,7 @@ void OpenLogger::threadLogFunc()
                         fflush(m_loggerPtr);
                     }
                     catch(...) {
-                        printf("[OpenLogger] :: something went wrong!!\n");
+                        printf("[OpenLogger] :: Ops, something went wrong!!\n");
 
                         writeFailed++;
                     }
@@ -224,7 +224,7 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
             double fsize = getFileSize()/(1024.0*1024.0);
             if (fsize >= MAX_FILE_SIZE)
             {
-                printf ("Exceeded File size = %.2lfmbs (max = %d)\n", fsize, MAX_FILE_SIZE);
+                printf ("[OpenLogger] Exceeded File size = %.2lfmbs (max = %d)\n", fsize, MAX_FILE_SIZE);
                 dataCount = sprintf(currMsg, "%s File size limit exeeded(%.2lf)\
                             \n%s Stoping logging now..\n", m_prevMsgPrefix.c_str(), 
                             fsize, m_prevMsgPrefix.c_str());
@@ -235,11 +235,7 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
             {
                 int waitTimeOut = -10;
                 while (m_logMsgVec.size() >= MSG_BUFFER_SIZE+2 && ++waitTimeOut)
-                {
-                    if (waitTimeOut == -1)
-                        printf ("[OpenLogger] :: Logger wait = %d\n", waitTimeOut); 
                     usleep(10000);
-                }
                 
                 if (waitTimeOut == 0)
                 {
@@ -286,7 +282,7 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
                     }
                 }
                 catch(...) {
-                    printf("[OpenLogger] :: something went wrong!!\n");
+                    printf("[OpenLogger] :: Ops, something went wrong!!\n");
                     dataCount = -1;
                 }
             } 
