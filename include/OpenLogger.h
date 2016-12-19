@@ -7,7 +7,8 @@
 #include <stdio.h>
 
 #define MAX_MSG_SIZE 2048 // bytes
-#define MAX_FILE_SIZE 512 // mb's
+//#define MAX_FILE_SIZE 512 // mb's
+#define MAX_FILE_SIZE 100 // mb's
 #define MSG_BUFFER_SIZE 100 // number
 
 enum LOG_TYPE {ERR = 0, WAR, INF, DEB, VER};

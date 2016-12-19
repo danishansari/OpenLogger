@@ -1,5 +1,6 @@
 #include "OpenLogger.h"
 
+#include <climits>
 #include <sstream>
 #include <unistd.h>
 #include <sys/time.h>
@@ -109,36 +110,42 @@ void OpenLogger::threadLogFunc()
 
     while (m_enableThread)
     {
-        if (m_logMsgVec.size() > 0 && !m_fileSizeExceeded)
+        if (m_logMsgVec.size() > 0)
         {
             if (writeFailed < 3)
             {
-                std::string logMsg = m_logMsgVec.front();
+                pthread_mutex_lock(&logMutex);
 
-                try {
-                    if (fprintf(m_loggerPtr, "%s", logMsg.c_str()) <= 0)
+                int logBuffer = (m_logMsgVec.size()*100.0)/MSG_BUFFER_SIZE; 
+
+                for (int i = 60; (i < logBuffer && i < 65) || i == 60; i++)
+                {
+                    std::string logMsg = m_logMsgVec.front();
+
+                    try 
                     {
-                        printf("[OpenLogger] :: could not write log!!\n");
+                        if (fprintf(m_loggerPtr, "%s", logMsg.c_str()) <= 0)
+                        {
+                            printf("[OpenLogger] :: could not write log!!\n");
+                            writeFailed++;
+                        }
+                        else
+                        {
+                            writeFailed = 0;
+
+                            m_logMsgVec.pop();
+                        }
+
+                        fflush(m_loggerPtr);
+                    }
+                    catch(...) {
+                        printf("[OpenLogger] :: something went wrong!!\n");
+
                         writeFailed++;
                     }
-                    else
-                    {
-                        writeFailed = 0;
-
-                        pthread_mutex_lock(&logMutex);
-
-                        m_logMsgVec.pop();
-
-                        pthread_mutex_unlock(&logMutex);
-                    }
-
-                    fflush(m_loggerPtr);
                 }
-                catch(...) {
-                    printf("[OpenLogger] :: something went wrong!!\n");
-
-                    writeFailed++;
-                }
+                
+                pthread_mutex_unlock(&logMutex);
             }
             else
             {
@@ -148,7 +155,10 @@ void OpenLogger::threadLogFunc()
         else if (m_enableThread == -1)
             m_enableThread = 0;
 
-        usleep(10000);
+        if (m_logMsgVec.size() < MSG_BUFFER_SIZE/5)
+            usleep(10000);
+        else
+            usleep(1000);
     }
 
     printf("[OpenLogger] :: Logging Thread exited!!\n");
@@ -158,6 +168,7 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
 {
     struct timeval ts, te;
     gettimeofday(&ts, NULL);
+    double tdd = 0.0;
 
     if (ifLogFisible(type) < 0)
         return -1;
@@ -213,18 +224,31 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
             double fsize = getFileSize()/(1024.0*1024.0);
             if (fsize >= MAX_FILE_SIZE)
             {
-                printf ("Exceeded File Size = %.2lf(max = %d)\n", fsize, MAX_FILE_SIZE);
-                dataCount = sprintf(currMsg, "File Size exeeded, stoping logging now..\n");
+                printf ("Exceeded File size = %.2lfmbs (max = %d)\n", fsize, MAX_FILE_SIZE);
+                dataCount = sprintf(currMsg, "%s File size limit exeeded(%.2lf)\
+                            \n%s Stoping logging now..\n", m_prevMsgPrefix.c_str(), 
+                            fsize, m_prevMsgPrefix.c_str());
                 m_fileSizeExceeded = 1;
             }
 
             if (m_enableThread)
             {
-                while (m_logMsgVec.size() >= MSG_BUFFER_SIZE)
+                int waitTimeOut = -10;
+                while (m_logMsgVec.size() >= MSG_BUFFER_SIZE+2 && ++waitTimeOut)
+                {
+                    if (waitTimeOut == -1)
+                        printf ("[OpenLogger] :: Logger wait = %d\n", waitTimeOut); 
                     usleep(10000);
+                }
+                
+                if (waitTimeOut == 0)
+                {
+                    printf ("[OpenLogger] :: Logger is not responding, skipping log!!\n");
+                    return -1; // Logger is taking longer than accepted
+                }
 
                 pthread_mutex_lock(&logMutex);
-
+                
                 if (m_prevMsg.find("same message") != std::string::npos)
                     m_logMsgVec.push(m_prevMsg);
 
@@ -275,12 +299,15 @@ int OpenLogger::logMessage(LOG_TYPE type, const char *msg)
 
     double td = (te.tv_sec - ts.tv_sec)*1000.0 + (te.tv_usec-ts.tv_usec)/1000.0;
 
-    if (td > 20.0 && m_logLongTime)
+    if (m_logLongTime && td > 20.0)
     {
         fprintf(m_loggerPtr, "%s Logging is taking so long(%.2lf ms)\n", 
                 m_prevMsgPrefix.c_str(), td);
 
         fflush(m_loggerPtr);
+
+        if (!m_enableThread)
+            printf("[OpenLogger] :: Use threading by setting ENABLE_THREAD flag.\n");
     }
 
     return dataCount;
@@ -292,11 +319,17 @@ int OpenLogger::ifLogFisible(LOG_TYPE type)
     {
         if (!m_loggerPtr)
             printf("[OpenLogger] :: logger not initialized!!\n");
-
-        if (m_fileSizeExceeded)
+        else if (m_fileSizeExceeded)
         {
+            m_fileSizeExceeded ++;
+            if (m_fileSizeExceeded >= 10000)
+                m_fileSizeExceeded = 1;
+
             if (getFileSize() >= MAX_FILE_SIZE)
-                printf("[OpenLogger] :: File Size exceeded, could not log message!!\n");
+            {
+                if (m_fileSizeExceeded < 5)
+                    printf("[OpenLogger] :: File size exceeded, logging stoped..\n");
+            }
             else
                 m_fileSizeExceeded = 0;
         }
