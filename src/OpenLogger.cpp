@@ -1,5 +1,6 @@
 #include "OpenLogger.h"
 
+#include <cstdlib>
 #include <sstream>
 #include <unistd.h>
 #include <sys/time.h>
@@ -59,6 +60,7 @@ void OpenLogger::initLogger(std::string fileName)
 
     if (fileName == "default.log")
     {
+        system("mkdir -p ./log");
         fileName = "./log/"+fileName;
         m_loggerPtr = fopen(fileName.c_str(), "w");
     }
